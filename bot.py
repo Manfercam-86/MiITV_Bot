@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Token de tu bot de Telegram ya configurado
-TOKEN = '8817627494:AAGwHjqzNfwMYZu7rXerTmrIwtC_p_1yxdw'
+TOKEN = '8817627494:AAH2zf8J9YepY2kRDtRnJl54SOK7g5c6AVQ'
 
 def calcular_equivalencia(medida_original, medida_nueva):
     try:
