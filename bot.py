@@ -132,22 +132,24 @@ if __name__ == '__main__':
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('neumatico', neumaticos_command))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_mensajes_y_fichas))
-
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_messages_y_fichas))
+    
+    # 1. El servidor falso para Render (usando flask_app)
     from flask import Flask
-import threading
-import os
+    import threading
+    import os
 
-app = Flask('')
+    flask_app = Flask('')
 
-@app.route('/')
-def home():
-    return "Bot vivo"
+    @flask_app.route('/')
+    def home():
+        return "Bot vivo"
 
-def run():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    def run():
+        port = int(os.environ.get("PORT", 10000))
+        flask_app.run(host='0.0.0.0', port=port)
 
-# Esto arranca el servidor falso en segundo plano para engañar a Render
-threading.Thread(target=run).start()
-app.run_polling()
+    threading.Thread(target=run).start()
+
+    # 2. El arranque real de tu bot de Telegram (usando app)
+    app.run_polling()
