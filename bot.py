@@ -52,7 +52,8 @@ if __name__ == '__main__':
     t.start()
     
     # Arrancar Bot
-    TOKEN = 'TU_TOKEN_AQUI' 
+    TOKEN = '8817627494:AAGqttSmzfzMaGP9TSHrVB4W-d_cOhHCYd4' 
     application = Application.builder().token(TOKEN).build()
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensajes))
     application.run_polling()
+e
