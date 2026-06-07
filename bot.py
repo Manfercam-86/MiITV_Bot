@@ -134,3 +134,19 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('neumatico', neumaticos_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_mensajes_y_fichas))
     app.run_polling()
+    from flask import Flask
+import threading
+import os
+
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Bot vivo"
+
+def run():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
+
+# Esto arranca el servidor falso en segundo plano para engañar a Render
+threading.Thread(target=run).start()
