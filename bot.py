@@ -16,7 +16,23 @@ async def neumaticos_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 # Nombre exacto corregido para que coincida con el manejador
 async def procesar_mensajes_y_fichas(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Procesando mensaje...")
+    user_text = update.message.text.strip().lower()
+    # Cambia 'fichas' por el nombre de tu carpeta si no están en la raíz
+    ruta_carpeta = '.' 
+    
+    encontrado = False
+    
+    # Busca en todos los archivos de la carpeta
+    for archivo in os.listdir(ruta_carpeta):
+        if archivo.lower().endswith('.pdf') and user_text in archivo.lower():
+            ruta_completa = os.path.join(ruta_carpeta, archivo)
+            await update.message.reply_document(document=open(ruta_completa, 'rb'))
+            encontrado = True
+            break # Sale al encontrar la primera coincidencia
+            
+    if not encontrado:
+        await update.message.reply_text("No he encontrado ninguna ficha que coincida con ese nombre.")
+    
 
 # --- CONFIGURACIÓN PRINCIPAL ---
 if __name__ == '__main__':
