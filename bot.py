@@ -133,7 +133,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('start', start))
     app.add_handler(CommandHandler('neumatico', neumaticos_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_mensajes_y_fichas))
-    app.run_polling()
+
     from flask import Flask
 import threading
 import os
@@ -150,3 +150,4 @@ def run():
 
 # Esto arranca el servidor falso en segundo plano para engañar a Render
 threading.Thread(target=run).start()
+app.run_polling()
