@@ -1,47 +1,39 @@
 import os
-import threading
+import asyncio
 from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from playwright.async_api import async_playwright
 
 TOKEN = '8817627494:AAH2zf8J9YepY2kRDtRnJl54SOK7g5c6AVQ'
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Bot operativo. Envíame el modelo y te buscaré la ficha.")
+async def buscar_ficha_en_web(homologacion):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        # Navegamos a la web
+        await page.goto("https://industria.serviciosmin.gob.es/FichasReducidasv2/UI/Solicitudes/Extranet/ConsultaFichasReducidas")
+        
+        # Escribir el número en el campo de búsqueda (ajusta el selector si es necesario)
+        await page.fill("input[name='numHomologacion']", homologacion) # Esto es un ejemplo de selector
+        await page.click("button[type='submit']")
+        
+        # Esperar a que aparezca el enlace de descarga
+        await page.wait_for_selector("a.download-link") # Selector del botón de descarga
+        link = await page.get_attribute("a.download-link", "href")
+        
+        await browser.close()
+        return link
 
-async def neumaticos_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Comando de neumáticos.")
-
-# LÓGICA DE BÚSQUEDA CORREGIDA Y DEFINITIVA
 async def procesar_mensajes_y_fichas(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_text = update.message.text.strip().lower()
-    ruta_carpeta = '.' 
-    encontrado = False
-    
-    for archivo in os.listdir(ruta_carpeta):
-        if archivo.lower().endswith('.pdf') and user_text in archivo.lower():
-            ruta_completa = os.path.join(ruta_carpeta, archivo)
-            await update.message.reply_document(document=open(ruta_completa, 'rb'))
-            encontrado = True
-            break 
-            
-    if not encontrado:
-        await update.message.reply_text(f"No encontré nada para '{user_text}'. Asegúrate de que el PDF está subido al repositorio.")
+    await update.message.reply_text("Buscando en el Ministerio, espera un momento...")
+    try:
+        url_pdf = await buscar_ficha_en_web(update.message.text.strip())
+        await update.message.reply_document(document=url_pdf)
+    except Exception as e:
+        await update.message.reply_text(f"No he podido descargarla automáticamente: {str(e)}")
 
 if __name__ == '__main__':
     app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler('start', start))
-    app.add_handler(CommandHandler('neumatico', neumaticos_command))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, procesar_mensajes_y_fichas))
-    
-    flask_app = Flask('')
-    @flask_app.route('/')
-    def home():
-        return "Bot vivo"
-
-    def run_flask():
-        port = int(os.environ.get("PORT", 10000))
-        flask_app.run(host='0.0.0.0', port=port)
-
-    threading.Thread(target=run_flask).start()
     app.run_polling()
