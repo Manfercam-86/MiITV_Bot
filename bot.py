@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from playwright.async_api import async_playwright
 
-TOKEN = '8817627494:AAH2zf8J9YepY2kRDtRnJl54SOK7g5c6AVQ'
+TOKEN = '8817627494:AAGqttSmzfzMaGP9TSHrVB4W-d_cOhHCYd4'
 
 async def buscar_ficha_en_web(homologacion):
     async with async_playwright() as p:
