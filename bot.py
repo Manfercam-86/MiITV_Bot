@@ -1,59 +1,53 @@
-import os
-from flask import Flask
-from threading import Thread
-from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes, CommandHandler
-from playwright.async_api import async_playwright
-import asyncio
+ 
 
-app = Flask(__name__)
-@app.route('/')
-def home():
-    return "Bot activo"
+// --- CONFIGURACIÓN ---
+var TOKEN = "8817627494:AAG3kIpEX56BzCrokIOYFovY3Zk2V2yiW4M"; 
+var URL_TELEGRAM = "https://api.telegram.org/bot" + TOKEN;
 
-def run_web():
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-
-# --- Módulo: Búsqueda de Fichas ---
-async def buscar_ficha(homologacion):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        await page.goto("https://industria.serviciosmin.gob.es/FichasReducidasv2/UI/Solicitudes/Extranet/ConsultaFichasReducidas")
-        await page.fill("input[name='numHomologacion']", homologacion)
-        await page.click("button[type='submit']")
-        await page.wait_for_selector("a.download-link", timeout=15000)
-        link = await page.get_attribute("a.download-link", "href")
-        await browser.close()
-        return link
-
-# --- Módulo: Equivalencia Neumáticos (Cálculo básico) ---
-def calcular_equivalencia(medida_original, medida_nueva):
-    # Esto es una simplificación lógica de la normativa ITV
-    return "La equivalencia debe cumplir: +/- 3% en diámetro, mismo índice de carga y velocidad igual o superior."
-
-async def manejar_mensajes(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    texto = update.message.text.strip()
+function doPost(e) {
+  var contents = JSON.parse(e.postData.contents);
+  if (!contents.message || !contents.message.text) return;
+  
+  var chatId = contents.message.chat.id;
+  var text = contents.message.text.trim();
+  
+  // 1. Lógica de Homologación (Empieza por 'e')
+  if (text.toLowerCase().startsWith('e')) {
+    var enlace = "https://industria.serviciosmin.gob.es/FichasReducidasv2/UI/Solicitudes/Extranet/ConsultaFichasReducidas";
+    var respuesta = "✅ Solicitud recibida.\n\n🔗 Acceso directo: " + enlace + "\n\n📄 Código para copiar: `" + text + "`\n\n_Descarga tu ficha y súbela a Drive para procesarla._";
     
-    # Lógica: Si parece una homologación (tiene *) busca en web, si no, es consulta
-    if '*' in texto:
-        await update.message.reply_text("Buscando ficha técnica en Ministerio...")
-        try:
-            url = await buscar_ficha(texto)
-            await update.message.reply_document(document=url)
-        except Exception as e:
-            await update.message.reply_text("No se encontró o error de conexión.")
-    else:
-        await update.message.reply_text("Para buscar ficha, envía el número (ej: e1*2007/46*0273*00). Para neumáticos, escribe 'neumatico [medida]'")
+    enviarMensaje(chatId, respuesta);
+  } 
+  
+  // 2. Lógica de Neumáticos (ej: 205/55R16 225/45R17)
+  else if (text.includes('/')) {
+    var partes = text.split(/[\s,]+/);
+    if (partes.length >= 2) {
+      enviarMensaje(chatId, calcularEquivalencia(partes[0], partes[1]));
+    }
+  }
+  
+  // 3. Comandos base
+  else {
+    enviarMensaje(chatId, "🤖 *Asistente Activo*\n\nComandos:\n- `e...`: Ficha reducida\n- `205/55R16 225/45R17`: Equivalencia");
+  }
+}
 
-if __name__ == '__main__':
-    # Arrancar Web Server
-    t = Thread(target=run_web)
-    t.start()
-    
-    # Arrancar Bot
-    TOKEN = '8817627494:AAGqttSmzfzMaGP9TSHrVB4W-d_cOhHCYd4' 
-    application = Application.builder().token(TOKEN).build()
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, manejar_mensajes))
-    application.run_polling()
-e
+// --- MÓDULO DE CÁLCULO ---
+function calcularEquivalencia(m1, m2) {
+  function getDiametro(m) {
+    var p = m.match(/(\d+)\/(\d+)R(\d+)/);
+    if (!p) return 0;
+    return (parseInt(p[1]) * (parseInt(p[2]) / 100) * 2) + (parseInt(p[3]) * 25.4);
+  }
+  var d1 = getDiametro(m1), d2 = getDiametro(m2);
+  if (d1 === 0 || d2 === 0) return "❌ Formato incorrecto.";
+  var dif = ((d2 - d1) / d1) * 100;
+  return "📏 *Resultado:*\n" + (Math.abs(dif) <= 3 ? "✅ ES EQUIVALENTE" : "❌ NO ES EQUIVALENTE") + 
+         "\n(Diferencia: " + dif.toFixed(2) + "%)";
+}
+
+// --- MÓDULO DE COMUNICACIÓN ---
+function enviarMensaje(chatId, texto) {
+  UrlFetchApp.fetch(URL_TELEGRAM + "/sendMessage?chat_id=" + chatId + "&parse_mode=Markdown&text=" + encodeURIComponent(texto));
+}
